@@ -10,14 +10,6 @@ interface JwtPayload {
   email: string;
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
-  }
-}
-
 export const authenticateToken = (
   req: Request,
   res: Response,
@@ -58,3 +50,10 @@ export const signToken = (username: string, email: string, _id: string) => {
 
   return jwt.sign(payload, secretKey, { expiresIn: "1h" });
 };
+
+export class AuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+    Object.defineProperty(this, "name", { value: "AuthenticationError" });
+  }
+}

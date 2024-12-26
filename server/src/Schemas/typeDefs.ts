@@ -15,29 +15,15 @@ export const typeDefs = `
     username: String!
     email: String!
     bookCount: Int
-    savedBooks: [Book]
+    savedBooks: [String]
   }
 
-  type Book {
+  input BookInput {
     bookId: String!
-    authors: [String]
-    description: String
-    title: String
-    image: String
-    link: String
   }
 
   type Auth {
     token: String!
     user: User!
-  }
-
-  input BookInput {
-    bookId: String!
-    authors: [String]
-    description: String
-    title: String
-    image: String
-    link: String
   }
 `;

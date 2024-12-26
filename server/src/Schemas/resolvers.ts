@@ -1,6 +1,5 @@
-import { User } from "../models/User";
-import { AuthenticationError } from "@apollo/server";
-import { signToken } from "../services/auth";
+import User from "../models/User";
+import { AuthenticationError } from "../services/auth";
 
 export const resolvers = {
   Query: {
@@ -20,23 +19,30 @@ export const resolvers = {
       if (!user || !(await user.isCorrectPassword(password))) {
         throw new AuthenticationError("Incorrect credentials");
       }
-      const token = signToken(user.username, user.email, user._id.toString());
+      const token = signToken(user.username, user.email, user.id.toString());
       return { token, user };
     },
-    addUser: async (_parent: any, { username, email, password }: any) => {
+    addUser: async (
+      _parent: any,
+      {
+        username,
+        email,
+        password,
+      }: { username: string; email: string; password: string },
+    ) => {
       const user = await User.create({ username, email, password });
-      const token = signToken(user.username, user.email, user._id.toString());
+      const token = signToken(user.username, user.email, user.id.toString());
       return { token, user };
     },
     saveBook: async (
       _parent: any,
-      { input }: { input: BookInput },
+      { input }: { input: { bookId: string } },
       context: any,
     ) => {
       if (context.user) {
         const updatedUser = await User.findByIdAndUpdate(
           context.user._id,
-          { $addToSet: { savedBooks: input } },
+          { $addToSet: { savedBooks: input.bookId } },
           { new: true, runValidators: true },
         );
         return updatedUser;
@@ -51,7 +57,7 @@ export const resolvers = {
       if (context.user) {
         const updatedUser = await User.findByIdAndUpdate(
           context.user._id,
-          { $pull: { savedBooks: { bookId } } },
+          { $pull: { savedBooks: bookId } },
           { new: true },
         );
         return updatedUser;
