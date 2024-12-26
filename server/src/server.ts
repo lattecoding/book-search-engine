@@ -1,10 +1,11 @@
 import express, { Request, Response } from "express";
 import path from "node:path";
 import { ApolloServer } from "@apollo/server";
-import { typeDefs, resolvers } from "./schemas"; // Your GraphQL schemas
-import db from "./config/connection"; // MongoDB connection
+import { typeDefs } from "./schemas/typeDefs.js";
+import { resolvers } from "./schemas/resolvers.js";
+import db from "./config/connection.js"; // MongoDB connection
 import { expressMiddleware } from "@apollo/server/express4"; // Middleware for Apollo Server with Express
-import { authenticateToken } from "./services/auth"; // Auth utility, if you use JWT auth
+import { authenticateToken } from "./services/auth.js"; // Auth utility, if you use JWT auth
 
 const startApolloServer = async () => {
   try {

@@ -1,5 +1,5 @@
-import User from "../models/User";
-import { AuthenticationError } from "../services/auth";
+import User from "../models/User.js";
+import { AuthenticationError } from "../services/auth.js";
 
 export const resolvers = {
   Query: {
