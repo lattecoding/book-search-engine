@@ -1,27 +1,42 @@
 import express from "express";
+import path from "node:path";
 import { ApolloServer } from "apollo-server-express";
-import { typeDefs } from "./Schemas/typeDefs";
-import { resolvers } from "./Schemas/resolvers";
-import { authMiddleware } from "./auth";
+import db from "./config/connection";
+import { typeDefs, resolvers } from "./schemas"; // Correct the import path if needed
+import { authenticateToken } from "./utils/auth"; // If you are using the auth middleware
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 3001;
 
+// Initialize Apollo Server
 const server = new ApolloServer({
   typeDefs,
   resolvers,
-  context: authMiddleware,
+  context: ({ req }) => {
+    // Pass the user from the request if authenticated
+    if (req.user) {
+      return { user: req.user };
+    }
+    return {}; // If no user, return empty context
+  },
 });
 
-async function startServer() {
-  await server.start();
-  server.applyMiddleware({ app });
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-  app.listen(PORT, () => {
-    console.log(
-      `🚀 Server ready at http://localhost:${PORT}${server.graphqlPath}`,
-    );
-  });
+// Apply authentication middleware
+app.use(authenticateToken);
+
+// if we're in production, serve client/build as static assets
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../client/build")));
 }
 
-startServer();
+// Start Apollo Server as middleware
+server.applyMiddleware({ app });
+
+db.once("open", () => {
+  app.listen(PORT, () =>
+    console.log(`🌍 Now listening on localhost:${PORT}${server.graphqlPath}`),
+  );
+});

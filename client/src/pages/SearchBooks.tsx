@@ -64,7 +64,7 @@ const SearchBooks = () => {
 
     try {
       await saveBook({
-        variables: { book: bookToSave }, // Pass the book data as variables
+        variables: { input: bookToSave }, // Pass the book data as variables
       });
 
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);
