@@ -2,23 +2,21 @@ import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
 import { useMutation } from "@apollo/client";
-import { ADD_USER } from "../utils/mutations"; // Import the mutation
-import Auth from "../utils/auth";
+import { ADD_USER } from "../utils/mutations";
 
-const SignupForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
-  // Set initial form state
+// biome-ignore lint/correctness/noEmptyPattern: <explanation>
+const SignupForm = ({}: { handleModalClose: () => void }) => {
+  // set initial form state
   const [userFormData, setUserFormData] = useState({
     username: "",
     email: "",
     password: "",
+    savedBooks: [],
   });
-  // Set state for form validation
+  // set state for form validation
   const [validated] = useState(false);
-  // Set state for alert
+  // set state for alert
   const [showAlert, setShowAlert] = useState(false);
-
-  // Use the ADD_USER mutation
-  const [addUser, { error }] = useMutation(ADD_USER);
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
@@ -28,7 +26,7 @@ const SignupForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    // Check if form has everything (as per react-bootstrap docs)
+    // check if form has everything (as per react-bootstrap docs)
     const form = event.currentTarget;
     if (form.checkValidity() === false) {
       event.preventDefault();
@@ -37,11 +35,15 @@ const SignupForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
 
     try {
       const { data } = await addUser({
-        variables: { ...userFormData },
+        variables: userFormData,
       });
 
-      Auth.login(data.addUser.token); // Login the user using the returned token
-      handleModalClose(); // Close the modal (if applicable)
+      if (!data.addUser.ok) {
+        throw new Error("something went wrong!");
+      }
+
+      const { token } = data.addUser;
+      localStorage.setItem("id_token", token);
     } catch (err) {
       console.error(err);
       setShowAlert(true);
@@ -51,6 +53,7 @@ const SignupForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
       username: "",
       email: "",
       password: "",
+      savedBooks: [],
     });
   };
 
@@ -62,7 +65,7 @@ const SignupForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
         <Alert
           dismissible
           onClose={() => setShowAlert(false)}
-          show={showAlert || !!error}
+          show={showAlert}
           variant="danger"
         >
           Something went wrong with your signup!
@@ -129,5 +132,7 @@ const SignupForm = ({ handleModalClose }: { handleModalClose: () => void }) => {
     </>
   );
 };
+
+const [addUser] = useMutation(ADD_USER);
 
 export default SignupForm;

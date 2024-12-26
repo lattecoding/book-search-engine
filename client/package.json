@@ -16,7 +16,8 @@
     "react-bootstrap": "^2.7.4",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.11.2",
-    "@apollo/client": "^3.10.6"
+    "@apollo/client": "^3.10.6",
+    "graphql": "^16.9.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",

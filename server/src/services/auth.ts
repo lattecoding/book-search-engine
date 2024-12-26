@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 interface JwtPayload {
@@ -24,25 +25,27 @@ export const authenticateToken = (
 ) => {
   const authHeader = req.headers.authorization;
 
-  if (authHeader) {
-    const token = authHeader.split(" ")[1];
+  if (!authHeader) {
+    return res.status(401).json({ message: "Missing Authorization header" });
+  }
 
-    const secretKey = process.env.JWT_SECRET_KEY;
-    if (!secretKey) {
-      return res.sendStatus(500); // Internal Server Error if secret key is missing
+  const token = authHeader.split(" ")[1];
+
+  const secretKey = process.env.JWT_SECRET_KEY;
+  if (!secretKey) {
+    return res
+      .status(500)
+      .json({ message: "JWT Secret Key not set in environment variables" });
+  }
+
+  jwt.verify(token, secretKey, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: "Invalid token" });
     }
 
-    jwt.verify(token, secretKey, (err, user) => {
-      if (err) {
-        return res.sendStatus(403); // Forbidden
-      }
-
-      req.user = user as JwtPayload;
-      return next();
-    });
-  } else {
-    res.sendStatus(401); // Unauthorized
-  }
+    req.user = user as JwtPayload;
+    next();
+  });
 };
 
 export const signToken = (username: string, email: string, _id: string) => {

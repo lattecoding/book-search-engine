@@ -1,25 +1,32 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import { Container, Col, Form, Button, Card, Row } from "react-bootstrap";
-import { useMutation } from "@apollo/client"; // Import useMutation
-import { SAVE_BOOK } from "../utils/mutations"; // Import the mutation
 
 import Auth from "../utils/auth";
-import { searchGoogleBooks } from "../utils/API"; // Only keep the search API
+import { useMutation } from "@apollo/client"; // Import useMutation
+import { SAVE_BOOK } from "../utils/mutations"; // Import the SAVE_BOOK mutation
 import { saveBookIds, getSavedBookIds } from "../utils/localStorage";
 import type { Book } from "../models/Book";
 import type { GoogleAPIBook } from "../models/GoogleAPIBook";
 
 const SearchBooks = () => {
+  // create state for holding returned google api data
   const [searchedBooks, setSearchedBooks] = useState<Book[]>([]);
+  // create state for holding our search field data
   const [searchInput, setSearchInput] = useState("");
-  const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
-  const [saveBook] = useMutation(SAVE_BOOK); // Initialize the mutation
 
+  // create state to hold saved bookId values
+  const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
+
+  // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
   useEffect(() => {
     return () => saveBookIds(savedBookIds);
   });
 
+  // Set up Apollo's useMutation hook for saving books
+  const [saveBookMutation] = useMutation(SAVE_BOOK);
+
+  // create method to search for books and set state on form submit
   const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -51,11 +58,14 @@ const SearchBooks = () => {
     }
   };
 
+  // create function to handle saving a book to our database using Apollo's useMutation
   const handleSaveBook = async (bookId: string) => {
+    // find the book in `searchedBooks` state by the matching id
     const bookToSave: Book = searchedBooks.find(
       (book) => book.bookId === bookId,
     )!;
 
+    // get token
     const token = Auth.loggedIn() ? Auth.getToken() : null;
 
     if (!token) {
@@ -63,11 +73,24 @@ const SearchBooks = () => {
     }
 
     try {
-      await saveBook({
-        variables: { input: bookToSave }, // Pass the book data as variables
+      // Call the saveBookMutation function to save the book via Apollo
+      const { data } = await saveBookMutation({
+        variables: {
+          input: {
+            bookId: bookToSave.bookId,
+            authors: bookToSave.authors,
+            title: bookToSave.title,
+            description: bookToSave.description,
+            image: bookToSave.image,
+            link: "", // You can set a link if you have one
+          },
+        },
       });
 
-      setSavedBookIds([...savedBookIds, bookToSave.bookId]);
+      // If the book was successfully saved, update state to reflect the saved book ID
+      if (data) {
+        setSavedBookIds([...savedBookIds, bookToSave.bookId]);
+      }
     } catch (err) {
       console.error(err);
     }

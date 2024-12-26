@@ -1,6 +1,6 @@
 import { User } from "../models/User";
-import { AuthenticationError } from "apollo-server-express";
-import { signToken } from "../utils/auth";
+import { AuthenticationError } from "@apollo/server";
+import { signToken } from "../services/auth";
 
 export const resolvers = {
   Query: {
@@ -28,11 +28,15 @@ export const resolvers = {
       const token = signToken(user.username, user.email, user._id.toString());
       return { token, user };
     },
-    saveBook: async (_parent: any, { input }: { input: any }, context: any) => {
+    saveBook: async (
+      _parent: any,
+      { input }: { input: BookInput },
+      context: any,
+    ) => {
       if (context.user) {
         const updatedUser = await User.findByIdAndUpdate(
           context.user._id,
-          { $push: { savedBooks: input } },
+          { $addToSet: { savedBooks: input } },
           { new: true, runValidators: true },
         );
         return updatedUser;

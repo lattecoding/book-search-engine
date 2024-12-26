@@ -1,37 +1,52 @@
-import { useQuery, useMutation } from "@apollo/client";
 import { Container, Card, Button, Row, Col } from "react-bootstrap";
-
-import { GET_ME } from "../utils/queries"; // Import the query
-import { REMOVE_BOOK } from "../utils/mutations"; // Import the mutation
-import { removeBookId } from "../utils/localStorage";
+import { useQuery, useMutation } from "@apollo/client"; // Import Apollo hooks
+import { GET_ME } from "../utils/queries"; // Import the GET_ME query
+import { REMOVE_BOOK } from "../utils/mutations"; // Import the REMOVE_BOOK mutation
 import Auth from "../utils/auth";
+import { removeBookId } from "../utils/localStorage";
+import type { User } from "../models/User";
+import type { Book } from "../models/Book";
 
 const SavedBooks = () => {
-  const { loading, data } = useQuery(GET_ME); // Fetch user data
-  const [removeBook] = useMutation(REMOVE_BOOK); // Define the mutation
+  // Use Apollo's useQuery to fetch user data
+  const { loading, data } = useQuery(GET_ME);
 
-  const userData = data?.me || {}; // Get user data from the query
+  // Use Apollo's useMutation hook for removing a book
+  const [removeBook] = useMutation(REMOVE_BOOK);
 
+  // If the query is loading, show a loading message
+  if (loading) {
+    return <h2>LOADING...</h2>;
+  }
+
+  // If there's no user data, display an error
+  if (!data?.me) {
+    return <h2>No user data found.</h2>;
+  }
+
+  const userData: User = data.me;
+
+  // Handle deleting a book using Apollo's useMutation hook
   const handleDeleteBook = async (bookId: string) => {
-    if (!Auth.loggedIn()) {
+    const token = Auth.loggedIn() ? Auth.getToken() : null;
+
+    if (!token) {
       return false;
     }
 
     try {
       const { data } = await removeBook({
-        variables: { bookId }, // Pass the bookId to the mutation
+        variables: { bookId },
       });
 
-      // Update localStorage
-      removeBookId(bookId);
+      // On success, update the user data and remove the book ID from localStorage
+      if (data) {
+        removeBookId(bookId); // Keep this function to update localStorage
+      }
     } catch (err) {
       console.error(err);
     }
   };
-
-  if (loading) {
-    return <h2>LOADING...</h2>;
-  }
 
   return (
     <>
@@ -53,30 +68,32 @@ const SavedBooks = () => {
             : "You have no saved books!"}
         </h2>
         <Row>
-          {userData.savedBooks.map((book) => (
-            <Col md="4" key={book.bookId}>
-              <Card border="dark">
-                {book.image && (
-                  <Card.Img
-                    src={book.image}
-                    alt={`The cover for ${book.title}`}
-                    variant="top"
-                  />
-                )}
-                <Card.Body>
-                  <Card.Title>{book.title}</Card.Title>
-                  <p className="small">Authors: {book.authors.join(", ")}</p>
-                  <Card.Text>{book.description}</Card.Text>
-                  <Button
-                    className="btn-block btn-danger"
-                    onClick={() => handleDeleteBook(book.bookId)}
-                  >
-                    Delete this Book!
-                  </Button>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
+          {userData.savedBooks.map((book: Book) => {
+            return (
+              <Col md="4" key={book.bookId}>
+                <Card border="dark">
+                  {book.image ? (
+                    <Card.Img
+                      src={book.image}
+                      alt={`The cover for ${book.title}`}
+                      variant="top"
+                    />
+                  ) : null}
+                  <Card.Body>
+                    <Card.Title>{book.title}</Card.Title>
+                    <p className="small">Authors: {book.authors}</p>
+                    <Card.Text>{book.description}</Card.Text>
+                    <Button
+                      className="btn-block btn-danger"
+                      onClick={() => handleDeleteBook(book.bookId)}
+                    >
+                      Delete this Book!
+                    </Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+            );
+          })}
         </Row>
       </Container>
     </>
